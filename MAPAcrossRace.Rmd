@@ -1,0 +1,112 @@
+---
+title: "MAPAcrossRace"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+#https://www.rdocumentation.org/packages/bigrquery/versions/0.4.1
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dslabs)
+library(dplyr)
+library(tidyverse)
+library(bigrquery)
+library(readr)
+library(httpuv)
+library(odbc)
+library(sqldf)
+library(DBI)
+library(comorbidity)
+library(tableone)
+library(dbplyr)
+library(RPostgres)
+library(reshape)
+library(bayestestR)
+library(weathermetrics)
+library(ggthemes)
+library(pROC)
+library(caret)
+library(knitr)
+library(kableExtra)
+library(stringr)
+library(rmarkdown)
+library(modelsummary)
+library(bookdown)
+library(scales)
+library(glue)
+library(extrafont)
+library(DiagrammeR)
+library(labelled)
+library(DescTools)
+library(MASS)
+
+select <- dplyr::select
+extrafont::loadfonts(device="win")
+
+options(scipen = 20)
+
+con <- dbConnect(
+  bigrquery::bigquery(),
+  project = "mimic-gottlieb",
+  dataset = "physionet-data.mimiciii_clinical.chartevents",
+  )
+
+```
+
+```{sql, connection=con, output.var = "BPs",echo = FALSE}
+
+SELECT patientunitstayid, chartoffset, entryoffset, nibp_systolic, nibp_diastolic, nibp_mean, ibp_systolic, ibp_diastolic, ibp_mean FROM `physionet-data.eicu_crd_derived.pivoted_vital` WHERE chartoffset < 1440 ORDER BY patientunitstayid, chartoffset
+
+```
+
+```{sql, connection=con, output.var = "dialysis",echo = FALSE}
+
+SELECT patientunitstayid, dialysistotal FROM `physionet-data.eicu_crd.intakeoutput` WHERE dialysistotal >0
+
+```
+
+```{r}
+#saveRDS(BPs, file = "BPs.rdata")
+setwd("C:/Users/egott/OneDrive/Documents/MIT/MAPAcrossRace")
+BPs <- readRDS("BPs.rdata")
+dialysislist <- unique(dialysis$patientunitstayid)
+nondialysisBPs <- BPs %>% filter(!(patientunitstayid %in% dialysislist))
+nondialysislistunique <- unique(nondialysisBPs$patientunitstayid)
+nondialysislistuniqueSQL <- glue::glue_sql("{nondialysislistunique*}", .con = con2)
+```
+
+```{sql, connection=con, output.var = "ICDs",echo = FALSE}
+
+SELECT patientunitstayid, icd9code FROM `physionet-data.eicu_crd.diagnosis`
+
+```
+
+```{r}
+saveRDS(ICDs, file = "ICDs.rdata")
+ICDs <- readRDS("ICDs.rdata")
+Elixhauser <- comorbidity(x = ICDs, id = "patientunitstayid", code = "icd9code", icd = "icd9", score = "elixhauser", assign0 = FALSE)
+
+```
+
+```{sql, connection=con, output.var = "demographics",echo = FALSE}
+
+SELECT patientunitstayid, uniquepid, patienthealthsystemstayid, hospitalid, gender, age, ethnicity, apacheadmissiondx, hospitaldischargestatus, unittype FROM `physionet-data.eicu_crd.patient` ORDER BY uniquepid
+
+```
+
+```{r}
+saveRDS(demographics, file = "demographics.rdata")
+demographics <- readRDS("demographics.rdata")
+
+```
+
+```{sql, connection=con, output.var = "ventilationevents",echo = FALSE}
+
+SELECT patientunitstayid, event, hrs FROM `physionet-data.eicu_crd_derived.ventilation_events`
+```
+
+```{r}
+saveRDS(ventilationevents, file = "ventilationevents.rdata")
+ventilationevents <- readRDS("ventilationevents.rdata")
+
+```
