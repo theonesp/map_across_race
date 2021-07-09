@@ -80,6 +80,10 @@ colnames(nondialysisNIBP) <- c("patientunitstayid", "chartoffset", "entryoffset"
 nondialysisIBP <- select(nondialysisBPs, patientunitstayid, chartoffset, entryoffset, ibp_systolic, ibp_diastolic, ibp_mean)
 colnames(nondialysisIBP) <- c("patientunitstayid", "chartoffset", "entryoffset", "SBP", "DBP", "MAP")
 allBPs <- rbind(nondialysisNIBP, nondialysisIBP) %>% arrange(patientunitstayid, chartoffset) %>% group_by(patientunitstayid, chartoffset) %>% summarize(SBP = mean(SBP, na.rm = TRUE), DBP = mean(DBP, na.rm = TRUE), MAP = mean(MAP, na.rm = TRUE)) %>% group_by(patientunitstayid) %>% summarize(SBPauc = area_under_curve(chartoffset, SBP, method = "trapezoid", na.rm = TRUE), DBPauc = Area_Under_Curve(chartoffset, DBP, method = "trapezoid", na.rm = TRUE), MAPauc = area_under_curve(chartoffset, MAP, method = "trapezoid", na.rm = TRUE), starttime = min(chartoffset), endtime = max(chartoffset))
+
+BPcomplete <- rbind(nondialysisNIBP, nondialysisIBP) %>% arrange(patientunitstayid, chartoffset)
+
+BPcomplete[MAP < 65, diff(range(chartoffset)), by = patientunitstayid]
 ```
 
 ```{r}
