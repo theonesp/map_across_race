@@ -79,6 +79,7 @@ nondialysisNIBP <- select(nondialysisBPs, patientunitstayid, chartoffset, entryo
 colnames(nondialysisNIBP) <- c("patientunitstayid", "chartoffset", "entryoffset", "SBP", "DBP", "MAP")
 nondialysisIBP <- select(nondialysisBPs, patientunitstayid, chartoffset, entryoffset, ibp_systolic, ibp_diastolic, ibp_mean)
 colnames(nondialysisIBP) <- c("patientunitstayid", "chartoffset", "entryoffset", "SBP", "DBP", "MAP")
+
 allBPs <- rbind(nondialysisNIBP, nondialysisIBP) %>% arrange(patientunitstayid, chartoffset) %>% group_by(patientunitstayid, chartoffset) %>% summarize(SBP = mean(SBP, na.rm = TRUE), DBP = mean(DBP, na.rm = TRUE), MAP = mean(MAP, na.rm = TRUE)) %>% group_by(patientunitstayid) %>% summarize(SBPauc = area_under_curve(chartoffset, SBP, method = "trapezoid", na.rm = TRUE), DBPauc = Area_Under_Curve(chartoffset, DBP, method = "trapezoid", na.rm = TRUE), MAPauc = area_under_curve(chartoffset, MAP, method = "trapezoid", na.rm = TRUE), starttime = min(chartoffset), endtime = max(chartoffset))
 
 saveRDS(allBPs, file = "allBPs.rdata")
@@ -159,7 +160,14 @@ allBPs <- readRDS("allBPs.rdata")
 Elixhauser <- readRDS("Elixhauser.rdata")
 labs <- readRDS("labs.rdata")
 apache <- readRDS("apache.rdata")
+demographics <- readRDS("demographics.rdata")
 ventilationevents <- readRDS("ventilationevents.rdata")
 
 comp <- left_join(allBPs, demographics, by = "patientunitstayid") %>% left_join(Elixhauser, by = "patientunitstayid") %>% left_join(apache, by = "patientunitstayid") %>% filter(!is.na(MAPauc))
 ```
+
+how frequently blood pressure measured, overall and stratified by race, by hospital
+  adjust for age, illness severity, comorbidities
+look at biggest hospital in eICU
+hypotension as measured by other papers
+comorbidities/illness serverity
