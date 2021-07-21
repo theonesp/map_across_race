@@ -1,6 +1,6 @@
 ---
-title: "MAPAcrossRace"
-output: pdf_document
+title: "R Notebook"
+output: html_notebook
 ---
 
 ```{r setup, include=FALSE}
@@ -56,7 +56,7 @@ con <- dbConnect(
 
 ```{sql, connection=con, output.var = "BPs",echo = FALSE}
 
-SELECT patientunitstayid, chartoffset, entryoffset, nibp_systolic, nibp_diastolic, nibp_mean, ibp_systolic, ibp_diastolic, ibp_mean FROM `physionet-data.eicu_crd_derived.pivoted_vital` WHERE chartoffset < 1440 ORDER BY patientunitstayid, chartoffset
+
 
 ```
 
